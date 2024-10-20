@@ -2,14 +2,15 @@ package com.estudos.app.service;
 
 import com.estudos.app.dto.UserDto;
 import com.estudos.app.entity.User;
-import com.estudos.app.exception.UserAlreadyExistsException;
-import com.estudos.app.exception.UserNotFoundException;
-import com.estudos.app.exception.UsersListNotFoundException;
+import com.estudos.app.exception.user.UserAlreadyExistsException;
+import com.estudos.app.exception.user.UserNotFoundException;
+import com.estudos.app.logging.ServiceLogging;
 import com.estudos.app.mapper.UserMapper;
 import com.estudos.app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,39 +22,44 @@ public class UserService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final ServiceLogging log;
 
 //  Find all
     public List<UserDto> findAll (){
-        logger.info("Collecting users...");
+        log.infoOperation("start", "findAll", "User");
         List<User> listUsers = userRepository.findAll();
         if(listUsers.isEmpty()){
-            logger.warn("There's no users on list.");
-            throw new UsersListNotFoundException();
+            log.warnFindOperations("missing","findAll", "listUsers");
+            throw new UserNotFoundException(listUsers.size());
+
         }
+        log.infoOperation("success", "findALl", "User");
         return userMapper.listUserToDto(listUsers);
     }
 
 //  Create
     public UserDto createUser(UserDto userDto) {
-        logger.info("Creating user...");
+        log.infoOperation("start", "createUser", "User");
         userRepository.findByEmail(userDto.email())
                 .ifPresent(user -> {
-                    logger.warn("User already exists.\nEmail: {}\nNome: {}", userDto.email(), userDto.nome());
-                    throw new UserAlreadyExistsException();
+                    log.warnFindOperations("exists", "createUser", "User email");
+                    throw new UserAlreadyExistsException(userDto.email());
                 });
-
+        String encryptedPassword = new BCryptPasswordEncoder().encode(userDto.password());
         User newUser = userMapper.toUser(userDto);
+        newUser.setPassword(encryptedPassword);
         userRepository.save(newUser);
+        log.infoOperation("success", "createUser", "User");
         return userMapper.toDto(newUser);
     }
 
 //  Update
     public UserDto updateUser(Long id, UserDto userDto){
-        logger.info("Updating user with Id: {}", id);
+        log.infoOperation("start", "updateUser", "User");
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> {
-                    logger.warn("Can't find user by Id: {}", id);
-                    return new UserNotFoundException();
+                    log.warnFindOperations("missing", "updateUser", "User Id");
+                    return new UserNotFoundException(id);
                 });
         User updatedUser = userMapper.toUser(userDto);
         updatedUser.setId(existingUser.getId());
@@ -66,11 +72,20 @@ public class UserService {
     public void deleteUser (Long id){
         logger.info("Deleting user with Id: {}", id);
         User existingUser = userRepository.findById(id).orElseThrow(() -> {
-            logger.warn("There's no user with Id: {}", id);
-            return new UserNotFoundException();
+            log.warnFindOperations("missing", "deleteUser", "User Id");
+            return new UserNotFoundException(id);
         });
         userRepository.delete(existingUser);
-        logger.info("User successful deleted.");
+    }
+
+//  Get email
+    public UserDto findByEmail(String email){
+
+        User user = userRepository.findByEmail(email).orElseThrow(() -> {
+            log.warnFindOperations("missing", "findByEmail", "User email");
+            return new UserNotFoundException(email);
+        });
+        return userMapper.toDto(user);
     }
 
 }
