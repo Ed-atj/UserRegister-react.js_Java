@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@RestController("user")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping("/all")
-    public ResponseEntity<List<UserDto>> findAll(){
+    public ResponseEntity<List<UserDto>> findAll(@RequestHeader("x-auth") String jwt){
         List<UserDto> listUserDto = userService.findAll();
         return ResponseEntity.ok().body(listUserDto);
     }

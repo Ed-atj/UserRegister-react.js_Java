@@ -9,6 +9,7 @@ import org.mapstruct.Named;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
@@ -30,4 +31,9 @@ public interface UserMapper {
     default String dateToString(LocalDate date){
         return date != null ? date.format(DATE_FORMAT): null;
     }
+
+    default Optional<UserDto> optionalToDto(Optional<User> userOptional) {
+        return userOptional.map(this::toDto);
+    }
+
 }

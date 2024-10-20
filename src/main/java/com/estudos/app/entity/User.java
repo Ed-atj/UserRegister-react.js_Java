@@ -3,16 +3,14 @@ package com.estudos.app.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "User")
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
@@ -28,8 +26,11 @@ public class User {
     @Column(name="email", nullable = false, unique = true)
     private String email;
 
+    @Column(name="password", nullable = false)
+    private String password;
+
     @Column(name="cpf", nullable = false, unique = true)
-    private int cpf;
+    private String cpf;
 
     @Column(name="data_nascimento", nullable = false)
     private LocalDate dataDeNascimento;
@@ -46,7 +47,11 @@ public class User {
     @Column(name="complemento", nullable = false)
     private String complemento;
 
-    public User(String nome, String email, int cpf, LocalDate dataDeNascimento, int cep, String rua, int numRua, String complemento) {
+    @ManyToOne
+    @JoinColumn(name="user_type_id")
+    private UserType userType;
+
+    public User(String nome, String email, String password, String cpf, LocalDate dataDeNascimento, int cep, String rua, int numRua, String complemento, UserType userType) {
         this.nome = nome;
         this.email = email;
         this.cpf = cpf;
@@ -55,6 +60,15 @@ public class User {
         this.rua = rua;
         this.numRua = numRua;
         this.complemento = complemento;
+        this.userType = userType;
     }
 
+    public User(String email, String password) {
+        this.email = email;
+        this.password = password;
+    }
+
+    public boolean isEnabled(){
+        return true;
+    }
 }
